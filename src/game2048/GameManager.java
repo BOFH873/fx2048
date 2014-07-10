@@ -27,6 +27,7 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -85,6 +86,13 @@ public class GameManager extends Group {
     private int maxScore;
     private int maxValue;
     private int maxMoves;
+    
+    // Event Handlers
+    private EventHandler keyH;
+    private EventHandler swipeHUp;
+    private EventHandler swipeHRight;
+    private EventHandler swipeHDown;
+    private EventHandler swipeHLeft;
 
     public GameManager() {
         this(DEFAULT_GRID_SIZE);
@@ -380,6 +388,31 @@ public class GameManager extends Group {
                 hOvrButton.getChildren().setAll(bContinue, bTry);
                 hOvrButton.setTranslateY(TOP_HEIGHT + vGame.getSpacing() + GRID_WIDTH / 2);
                 this.getChildren().add(hOvrButton);
+            }
+        });
+
+        automaticPlayerProperty.addListener((observable, oldValue, newValue) -> {
+            Scene scene = this.getScene();
+            if (newValue)
+            {
+                this.keyH = scene.getOnKeyPressed();
+                this.swipeHUp = scene.getOnSwipeUp();
+                this.swipeHRight = scene.getOnSwipeRight();
+                this.swipeHDown = scene.getOnSwipeDown();
+                this.swipeHLeft = scene.getOnSwipeLeft();
+                scene.setOnKeyPressed(null);
+                scene.setOnSwipeUp(null);
+                scene.setOnSwipeRight(null);
+                scene.setOnSwipeDown(null);
+                scene.setOnSwipeLeft(null);
+            }
+            else
+            {
+                scene.setOnKeyPressed(this.keyH);
+                scene.setOnSwipeUp(this.swipeHUp);
+                scene.setOnSwipeRight(this.swipeHRight);
+                scene.setOnSwipeDown(this.swipeHDown);
+                scene.setOnSwipeLeft(this.swipeHLeft);
             }
         });
     }
