@@ -60,6 +60,13 @@ public class InvocatoreGiocatore implements Runnable {
     
     public void start()
     {
-        t.start();
+        getThread().start();
+    }
+
+    /**
+     * @return the Thread
+     */
+    public Thread getThread() {
+        return t;
     }
 }
