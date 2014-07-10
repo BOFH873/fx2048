@@ -1,6 +1,7 @@
 package game2048;
 
 import giocatoreAutomatico.*;
+import javafx.application.Platform;
 
 /**
  *
@@ -15,7 +16,7 @@ public class InvocatoreGiocatore implements Runnable {
     /**
      * Ritardo fra una mossa e l'altra (in millisecondi).
      */
-    private final int PERIODO_MOSSE = 1000;
+    private long periodo = 1000;
     
     private final GameManager gm;
     private final Thread t;
@@ -29,24 +30,32 @@ public class InvocatoreGiocatore implements Runnable {
     @Override
     public void run() {
         
-        /**
-         * Qualora non ci fosse nessuna partita in corso, le mosse non vengono 
-         * ne calcolate ne eseguite
-         */
-        if (!gm.isGameOver())
+        while (true)
         {
-            Griglia grid = gm.getGriglia();
-            Direction d = Direction.convertiDirezione(ga.prossimaMossa(grid));
-            gm.move(d);
+            /**
+             * Qualora non ci fosse nessuna partita in corso, le mosse non vengono 
+             * ne calcolate ne eseguite
+             */
+            if (!gm.isGameOver())
+            {
 
-            try
-            {
-                Thread.sleep(PERIODO_MOSSE);
-            }
-            catch (InterruptedException e)
-            {
-                // Non essendoci altri thread in grado di interrompere questo, non
-                // dovremmo preoccuparci di gestire questa eccezione.
+                Griglia grid = gm.getGriglia();
+                Direction d = Direction.convertiDirezione(ga.prossimaMossa(grid));
+
+//                System.out.println("GRIGLIA: " + grid);
+//                System.out.println("DIREZIONE " + d);
+
+                Platform.runLater(() -> { gm.move(d);});
+                
+                try
+                {
+                    Thread.sleep(getPeriodo());
+                }
+                catch (InterruptedException e)
+                {
+                    // Non essendoci altri thread in grado di interrompere questo, non
+                    // dovremmo preoccuparci di gestire questa eccezione.
+                }
             }
         }
     }
@@ -69,4 +78,19 @@ public class InvocatoreGiocatore implements Runnable {
     public Thread getThread() {
         return t;
     }
+
+    /**
+     * @return the periodo
+     */
+    public long getPeriodo() {
+        return periodo;
+    }
+
+    /**
+     * @param periodo the periodo to set
+     */
+    public void setPeriodo(long periodo) {
+        this.periodo = periodo;
+    }
+    
 }
