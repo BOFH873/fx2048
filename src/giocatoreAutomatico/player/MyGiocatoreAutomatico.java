@@ -32,7 +32,7 @@ public class MyGiocatoreAutomatico implements GiocatoreAutomatico {
         @Override
         public int prossimaMossa(Griglia g){
             
-            int scelta = this.numeroCasuale.nextInt() % 4;
+            int scelta = this.numeroCasuale.nextInt(4);
 
             return scelta;
         }
