@@ -54,6 +54,8 @@ public class GameManager extends Group {
     private static final int GRID_WIDTH = CELL_SIZE * DEFAULT_GRID_SIZE + BORDER_WIDTH * 2;
     private static final int TOP_HEIGHT = 92;
     private static final int PLAYS_NUMBER = 10;
+    private static final long PERIODO = 500;
+    private static final long PERIODO_STATS = 100;
 
     private volatile boolean movingTiles = false;
     private final int gridSize;
@@ -69,6 +71,7 @@ public class GameManager extends Group {
     private final Set<Tile> mergedToBeRemoved = new HashSet<>();
     private final ParallelTransition parallelTransition = new ParallelTransition();
     private final BooleanProperty layerOnProperty = new SimpleBooleanProperty(false);
+    private final BooleanProperty statsOnProperty = new SimpleBooleanProperty(false);
     
     private static List<Tripla> statistics = new ArrayList<Tripla>();
     
@@ -94,6 +97,9 @@ public class GameManager extends Group {
     private EventHandler swipeHDown;
     private EventHandler swipeHLeft;
 
+    // Invocatore
+    private InvocatoreGiocatore invocatore;
+    
     public GameManager() {
         this(DEFAULT_GRID_SIZE);
     }
@@ -415,6 +421,30 @@ public class GameManager extends Group {
                 scene.setOnSwipeLeft(this.swipeHLeft);
             }
         });
+        layerOnProperty.addListener((observable, oldValue, newValue) -> {
+            if (!newValue)
+            {
+                if (isAutomaticPlayerSet())
+                {
+                    long periodo = PERIODO;
+                    if (statsOnProperty.get()) periodo = PERIODO_STATS;
+                    try
+                    {
+                        this.invocatore = new InvocatoreGiocatore(this, periodo);
+                        this.invocatore.start();
+                    }
+                    catch (Exception e)
+                    {
+                        automaticPlayerProperty.set(false);
+                        //AGGIUNGERE CODICE PER PULIZIA E RESET GIOCO
+                        //CON RIPETIZIONE SCELTA GIOCATORE
+                    }
+                }
+            }
+            else
+            {
+            }
+        });
     }
 
     private void clearGame() {
@@ -666,8 +696,11 @@ public class GameManager extends Group {
 
         synchronized (gameGrid)
         {
-            for (Map.Entry<Location, Tile> entry: this.gameGrid.entrySet())
-            {
+            Iterator<Map.Entry<Location, Tile>> iter = this.gameGrid.entrySet().iterator();
+            Map.Entry<Location, Tile> entry;
+            while (iter.hasNext())
+            {                
+                entry = iter.next();
                 grid.put(
                         entry.getKey(),
                         (entry.getValue() != null) ? entry.getValue().getValue() : -1
@@ -684,7 +717,13 @@ public class GameManager extends Group {
         return gameOverProperty.get();
     }
     
-    
+    /**
+     * Wrapper per layerOnProperty.
+     */
+    public boolean isLayerOn() {
+        return layerOnProperty.get();
+    }
+
     /**
      * Restituisce true se si è deciso di lasciar giocare il giocatore automatico
      *
