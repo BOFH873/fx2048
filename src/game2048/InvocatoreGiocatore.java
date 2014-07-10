@@ -16,7 +16,7 @@ public class InvocatoreGiocatore implements Runnable {
     /**
      * Ritardo fra una mossa e l'altra (in millisecondi).
      */
-    private long periodo = 1000;
+    private long periodo;
     
     private final GameManager gm;
     private final Thread t;
@@ -28,41 +28,34 @@ public class InvocatoreGiocatore implements Runnable {
      * volta per volta da GiocatoreAutomatico.prossimaMossa().
      */
     @Override
-    public void run() {
-        
-        while (true)
+    public void run()
+    {    
+        while (!gm.isLayerOn())
         {
-            /**
-             * Qualora non ci fosse nessuna partita in corso, le mosse non vengono 
-             * ne calcolate ne eseguite
-             */
-            if (!gm.isGameOver())
-            {
-
-                Griglia grid = gm.getGriglia();
-                Direction d = Direction.convertiDirezione(ga.prossimaMossa(grid));
+            Griglia grid = gm.getGriglia();
+            Direction d = Direction.convertiDirezione(ga.prossimaMossa(grid));
 
 //                System.out.println("GRIGLIA: " + grid);
 //                System.out.println("DIREZIONE " + d);
 
-                Platform.runLater(() -> { gm.move(d);});
-                
-                try
-                {
-                    Thread.sleep(getPeriodo());
-                }
-                catch (InterruptedException e)
-                {
-                    // Non essendoci altri thread in grado di interrompere questo, non
-                    // dovremmo preoccuparci di gestire questa eccezione.
-                }
+            Platform.runLater(() -> { gm.move(d);});
+
+            try
+            {
+                Thread.sleep(getPeriodo());
+            }
+            catch (InterruptedException e)
+            {
+                // Non essendoci altri thread in grado di interrompere questo, non
+                // dovremmo preoccuparci di gestire questa eccezione.
             }
         }
     }
  
-    public InvocatoreGiocatore(GameManager gm) throws Exception
+    public InvocatoreGiocatore(GameManager gm, long periodo) throws Exception
     {
         this.gm = gm;
+        this.periodo = periodo;
         this.t = new Thread(this);
         this.ga = GiocatoreAutomatico.getGiocatoreAutomatico();
     }
