@@ -356,8 +356,16 @@ public class GameManager extends Group {
                 Button bTry = new Button("Try again");
                 bTry.getStyleClass().setAll("try");
 
-                bTry.setOnTouchPressed(e -> resetGame());
-                bTry.setOnAction(e -> resetGame());
+                bTry.setOnTouchPressed(e -> {
+			layerOnProperty.set(false);
+			resetGame();
+                        scegliGiocatore();
+		});
+                bTry.setOnAction(e -> {
+			layerOnProperty.set(false);
+			resetGame();
+                        scegliGiocatore();
+		});
 
                 hOvrButton.setAlignment(Pos.CENTER);
                 hOvrButton.getChildren().setAll(bTry);
@@ -388,8 +396,16 @@ public class GameManager extends Group {
                 });
                 Button bTry = new Button("Try again");
                 bTry.getStyleClass().add("try");
-                bTry.setOnTouchPressed(e -> resetGame());
-                bTry.setOnAction(e -> resetGame());
+                bTry.setOnTouchPressed(e -> {
+			layerOnProperty.set(false);
+			resetGame();
+                        scegliGiocatore();
+		});
+                bTry.setOnAction(e -> {
+			layerOnProperty.set(false);
+			resetGame();
+                        scegliGiocatore();
+		});
                 hOvrButton.setAlignment(Pos.CENTER);
                 hOvrButton.getChildren().setAll(bContinue, bTry);
                 hOvrButton.setTranslateY(TOP_HEIGHT + vGame.getSpacing() + GRID_WIDTH / 2);
@@ -725,13 +741,15 @@ public class GameManager extends Group {
     }
 
     /**
+     * @author Annalisa
      * Restituisce true se si è deciso di lasciar giocare il giocatore automatico
-     *
+     * @return true if the user decides to let the authomatic player play; false if the user decides to play.
     **/
     public boolean isAutomaticPlayerSet(){
 		return automaticPlayerProperty.get();
     }
     /**
+     * @author Annalisa
      * Crea il dialogue per scegliere se giocare manualmente o lasciar giocare il giocatore automatico
      **/
     public void scegliGiocatore(){
@@ -760,8 +778,12 @@ public class GameManager extends Group {
 		Button bAutomaticPlayer = new Button("Automatic\nPlayer");
 		bAutomaticPlayer.getStyleClass().add("try");
 		
-		//bAutomaticPlayer.setOnTouchPressed(e -> resetGame());
-		//bAutomaticPlayer.setOnAction(e -> resetGame());
+		bAutomaticPlayer.setOnTouchPressed(e -> {
+			automaticPlayerProperty.set(true);
+			layerOnProperty.set(false);
+			resetGame();
+		});
+		
 		bAutomaticPlayer.setOnAction(e -> {
 			automaticPlayerProperty.set(true);
 			layerOnProperty.set(false);
