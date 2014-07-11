@@ -1,5 +1,6 @@
 package game2048;
 
+import giocatoreAutomatico.Griglia;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +27,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.Group;
@@ -37,8 +39,14 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TableColumn;
+import javafx.geometry.Insets;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.cell.PropertyValueFactory;
 
 import giocatoreAutomatico.Griglia;
+import javafx.geometry.Orientation;
 
 /**
  *
@@ -64,6 +72,7 @@ public class GameManager extends Group {
     private final List<Location> locations = new ArrayList<>();
     private final Map<Location, Tile> gameGrid;
     private final BooleanProperty automaticPlayerProperty = new SimpleBooleanProperty(false);
+    private final BooleanProperty statisticsVisualizationProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty gameWonProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty gameOverProperty = new SimpleBooleanProperty(false);
     private final IntegerProperty gameScoreProperty = new SimpleIntegerProperty(0);
@@ -80,10 +89,13 @@ public class GameManager extends Group {
     private final Group gridGroup = new Group();
 
     private final HBox hTop = new HBox(0);
+    private final HBox hBottom = new HBox();
     private final Label lblScore = new Label("0");
     private final Label lblPoints = new Label();
     private final HBox hOvrLabel = new HBox();
     private final HBox hOvrButton = new HBox();
+    private final VBox vButton = new VBox();
+    
     
     // Statistic's variables
     private int maxScore;
@@ -124,6 +136,10 @@ public class GameManager extends Group {
         this.maxValue = 0;
         this.maxMoves = 0;
     }
+    
+    /*
+        Propongo un altro costruttore per non dover caricare la griglia di gioco e poi cancellarla. ..spero di ricordarmi di proporlo xD
+    */
 
     public void move(Direction direction) {
         if (layerOnProperty.get()) {
@@ -328,7 +344,7 @@ public class GameManager extends Group {
         gridGroup.setLayoutX(BORDER_WIDTH);
         gridGroup.setLayoutY(BORDER_WIDTH);
 
-        HBox hBottom = new HBox();
+        //HBox hBottom = new HBox();        Scope esteso a globale
         hBottom.getStyleClass().add("backGrid");
         hBottom.setMinSize(GRID_WIDTH, GRID_WIDTH);
         hBottom.setPrefSize(GRID_WIDTH, GRID_WIDTH);
@@ -467,7 +483,7 @@ public class GameManager extends Group {
         List<Node> collect = gridGroup.getChildren().filtered(c -> c instanceof Tile).stream().collect(Collectors.toList());
         gridGroup.getChildren().removeAll(collect);
         gameGrid.clear();
-        getChildren().removeAll(hOvrLabel, hOvrButton);
+        getChildren().removeAll(hOvrLabel, hOvrButton, vButton);
 
         layerOnProperty.set(false);
         gameScoreProperty.set(0);
@@ -516,7 +532,6 @@ public class GameManager extends Group {
     }
 
     interface AddTile {
-
         void add(int value, int x, int y);
     }
 
@@ -753,49 +768,180 @@ public class GameManager extends Group {
      * Crea il dialogue per scegliere se giocare manualmente o lasciar giocare il giocatore automatico
      **/
     public void scegliGiocatore(){
-		layerOnProperty.set(true);
-		hOvrLabel.getStyleClass().setAll("over");
-		hOvrLabel.setMinSize(GRID_WIDTH, GRID_WIDTH);
-		Label lblSceltaGiocatore = new Label("Who plays?");
-		lblSceltaGiocatore.getStyleClass().add("lblOver"); 
-		hOvrLabel.setAlignment(Pos.CENTER);
-		hOvrLabel.getChildren().setAll(lblSceltaGiocatore);
-		hOvrLabel.setTranslateY(TOP_HEIGHT + vGame.getSpacing());
-		this.getChildren().add(hOvrLabel);
-		
-		hOvrButton.setMinSize(GRID_WIDTH, GRID_WIDTH / 2);
-		hOvrButton.setSpacing(30);
-		
-		Button bHumanPlayer = new Button("Human\nPlayer");
-		bHumanPlayer.getStyleClass().add("try");
-		
-		bHumanPlayer.setOnAction(e -> {
-			automaticPlayerProperty.set(false);
-			layerOnProperty.set(false);
-			resetGame();
-		});
-		
-		Button bAutomaticPlayer = new Button("Automatic\nPlayer");
-		bAutomaticPlayer.getStyleClass().add("try");
-		
-		bAutomaticPlayer.setOnTouchPressed(e -> {
-			automaticPlayerProperty.set(true);
-			layerOnProperty.set(false);
-			resetGame();
-		});
-		
-		bAutomaticPlayer.setOnAction(e -> {
-			automaticPlayerProperty.set(true);
-			layerOnProperty.set(false);
-			resetGame();
-		});
-		
-		hOvrButton.setAlignment(Pos.CENTER);
-		hOvrButton.getChildren().setAll(bHumanPlayer, bAutomaticPlayer);
-		hOvrButton.setTranslateY(TOP_HEIGHT + vGame.getSpacing() + GRID_WIDTH / 2);
-		this.getChildren().add(hOvrButton);
-		
-	}
+        layerOnProperty.set(true);
+        hOvrLabel.getStyleClass().setAll("over");
+        hOvrLabel.setMinSize(GRID_WIDTH, GRID_WIDTH);
+        Label lblSceltaGiocatore = new Label("Who plays?");
+        lblSceltaGiocatore.getStyleClass().add("lblOver"); 
+        hOvrLabel.setAlignment(Pos.TOP_CENTER);
+        hOvrLabel.setMargin(lblSceltaGiocatore, new Insets(30, 0, 10, 0));
+        hOvrLabel.getChildren().setAll(lblSceltaGiocatore);
+        hOvrLabel.setTranslateY(TOP_HEIGHT + vGame.getSpacing());
+        this.getChildren().add(hOvrLabel);
+
+
+
+        vButton.setMinSize(GRID_WIDTH, GRID_WIDTH / 2);
+        vButton.setSpacing(30);
+        vButton.setAlignment(Pos.TOP_CENTER);
+        vButton.setPadding(new Insets(0, 150, 10, 150));
+        vButton.setTranslateY(TOP_HEIGHT + vGame.getSpacing() + (GRID_WIDTH )/ 3);
+
+
+        Button bHumanPlayer = new Button("Human Player");
+        bHumanPlayer.getStyleClass().add("try");
+
+        bHumanPlayer.setOnAction(e -> {
+                automaticPlayerProperty.set(false);
+                layerOnProperty.set(false);
+                resetGame();
+        });
+
+        bHumanPlayer.setOnTouchPressed(e -> {
+                automaticPlayerProperty.set(false);
+                layerOnProperty.set(false);
+                resetGame();
+        });
+
+        Button bAutomaticPlayer = new Button("Automatic Player");
+        bAutomaticPlayer.getStyleClass().add("try");
+
+        bAutomaticPlayer.setOnTouchPressed(e -> {
+                automaticPlayerProperty.set(true);
+                layerOnProperty.set(false);
+                resetGame();
+        });
+
+        bAutomaticPlayer.setOnAction(e -> {
+                automaticPlayerProperty.set(true);
+                layerOnProperty.set(false);
+                resetGame();
+        });
+
+        Button statisticsButton = new Button("A.P. Statistics");
+        statisticsButton.getStyleClass().add("try");
+
+        statisticsButton.setOnAction(e -> {
+                automaticPlayerProperty.set(true);
+                statisticsVisualizationProperty.set(true);
+                layerOnProperty.set(false);
+                resetGame();
+        });
+        statisticsButton.setOnTouchPressed(e -> {
+                automaticPlayerProperty.set(true);
+                statisticsVisualizationProperty.set(true);
+                layerOnProperty.set(false);
+                resetGame();
+        });
+
+        vButton.getChildren().setAll(bHumanPlayer, bAutomaticPlayer, statisticsButton);
+
+        this.getChildren().addAll(vButton);
+    }
+    
+    private void clearBox() {
+    
+        vGame.getChildren().remove(hBottom);
+        this.getChildren().removeAll(hOvrButton, hOvrLabel);
+    }
+    
+    /**
+     * @param list Contiene tutte le partite effettute
+     */
+    
+    private void showStat(/*Tripla[] dataIn*/) {
+        
+        VBox vTitle = new VBox();
+        VBox vPrinc = new VBox();
+        VBox vSecond = new VBox();
+        HBox hOvrLabelStat = new HBox();
+        HBox hOvrScore = new HBox();
+        HBox hOvrMoves = new HBox();
+        HBox hOvrDiv = new HBox();
+        VBox vOvrScrl = new VBox();
+        ScrollPane sp = new ScrollPane();
+        TableView<MatchStat> table = new TableView<>();
+        
+        //ObservableList data = FXCollections.observableArrayList(data);               DA DECOMMENTARE
+        //Tripla maxData = new Tripla();        DA DECOMMENTARE
+        
+        
+        
+        Label lbl = new Label("Statistiche");
+        lbl.getStyleClass().add("subtitle");
+        hOvrLabelStat.getChildren().add(lbl);
+        
+        Label lblScoreStat = new Label("Punteggio max: ");
+        Label valScore = new Label(/*maxData.getMaxScore()*/);    // DA DECOMMENTARE E CASTARE
+        hOvrScore.setSpacing(vGame.getSpacing());
+        lblScoreStat.getStyleClass().add("labelStat");
+        valScore.getStyleClass().add("labelStat");        
+        hOvrScore.getChildren().addAll(lblScoreStat, valScore);
+        
+        Label lblMoves = new Label("Mosse min: ");
+        Label valMoves = new Label(/*maxData.getMaxMoves()*/);    // DA DECOMMENTARE E CASTARE
+        hOvrMoves.setSpacing(vGame.getSpacing());
+        lblMoves.getStyleClass().add("labelStat");
+        valMoves.getStyleClass().add("labelStat");
+        hOvrMoves.getChildren().addAll(lblMoves, valMoves);
+        
+        Label lblDiv = new Label("Rapporto p/m: ");
+        Label valDiv = new Label(/*maxData.getMaxScore() / maxData.getMaxMoves()*/);    // DA DECOMMENTARE E CASTARE
+        hOvrDiv.setSpacing(vGame.getSpacing());
+        lblDiv.getStyleClass().add("labelStat");
+        valDiv.getStyleClass().add("labelStat");
+        hOvrDiv.getChildren().addAll(lblDiv, valDiv);
+        
+        Label scrollTitle = new Label("Statistiche complete: ");
+        scrollTitle.getStyleClass().add("labelStat");
+        
+        //table.setItem(data);
+        
+        TableColumn matchCol = new TableColumn("Partita n.");
+        TableColumn param1Col = new TableColumn("V/S");
+        TableColumn<MatchStat, String> param2Col = new TableColumn<>("Punteggio");
+        TableColumn<MatchStat, String> param3Col = new TableColumn<>("Mosse");
+        TableColumn<MatchStat, String> param4Col = new TableColumn<>("Valore raggiunto");
+        
+        matchCol.setMinWidth(GRID_WIDTH / 5);
+        param1Col.setMinWidth(GRID_WIDTH / 5);
+        param2Col.setMinWidth(GRID_WIDTH / 5);
+        param3Col.setMinWidth(GRID_WIDTH / 5);
+        param4Col.setMinWidth(GRID_WIDTH / 5);
+        
+        
+        //param2Col.setCellValueFactory(new PropertyValueFactory<MatchStat, String>("maxScore"));
+        //param3Col.setCellValueFactory(new PropertyValueFactory<MatchStat, String>("maxMoves"));
+        //param4Col.setCellValueFactory(new PropertyValueFactory<MatchStat, String>("maxValue"));
+        
+        table.getColumns().addAll(matchCol, param1Col, param2Col, param3Col, param4Col);
+        table.getStyleClass().add("table");
+        
+        sp.setContent(table);
+        sp.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        sp.setPrefSize((Integer)GRID_WIDTH, 150);
+        
+        vOvrScrl.setPadding(new Insets(5));
+        vOvrScrl.setSpacing(3);
+        vOvrScrl.getChildren().addAll(scrollTitle, sp);
+
+        vTitle.getChildren().add(hOvrLabelStat);
+        
+        vPrinc.setSpacing(15);
+        vPrinc.setPadding(new Insets(10));
+        vPrinc.getChildren().addAll(hOvrScore, hOvrMoves, hOvrDiv);
+        
+        vSecond.setSpacing(7);
+        vSecond.setPadding(new Insets(10));
+        vSecond.getChildren().add(vOvrScrl);
+        
+        vGame.setSpacing(20);
+        vGame.getChildren().addAll(vTitle, vPrinc, vSecond);
+    }
+    
+    private double getRatio(int score, int moves) {
+        return score/moves;
+    }
     
     private class MyGriglia extends HashMap<Location, Integer> implements Griglia {}
     
@@ -831,4 +977,16 @@ public class GameManager extends Group {
         public int getMaxValue(){ return this.maxValue; }
     }
     
+
+    
+    private interface MatchStat {
+        
+        public int getMaxScore();
+        public int getMaxValue();
+        public int getMaxMoves();        
+    }
+
 }
+
+
+
