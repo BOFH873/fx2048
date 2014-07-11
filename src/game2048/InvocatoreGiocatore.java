@@ -1,6 +1,7 @@
 package game2048;
 
 import giocatoreAutomatico.*;
+import javafx.application.Platform;
 
 /**
  *
@@ -15,7 +16,7 @@ public class InvocatoreGiocatore implements Runnable {
     /**
      * Ritardo fra una mossa e l'altra (in millisecondi).
      */
-    private final int PERIODO_MOSSE = 1000;
+    private long periodo;
     
     private final GameManager gm;
     private final Thread t;
@@ -27,21 +28,21 @@ public class InvocatoreGiocatore implements Runnable {
      * volta per volta da GiocatoreAutomatico.prossimaMossa().
      */
     @Override
-    public void run() {
-        
-        /**
-         * Qualora non ci fosse nessuna partita in corso, le mosse non vengono 
-         * ne calcolate ne eseguite
-         */
-        if (!gm.isGameOver())
+    public void run()
+    {    
+        while (!gm.isLayerOn())
         {
             Griglia grid = gm.getGriglia();
             Direction d = Direction.convertiDirezione(ga.prossimaMossa(grid));
-            gm.move(d);
+
+//                System.out.println("GRIGLIA: " + grid);
+//                System.out.println("DIREZIONE " + d);
+
+            Platform.runLater(() -> { gm.move(d);});
 
             try
             {
-                Thread.sleep(PERIODO_MOSSE);
+                Thread.sleep(getPeriodo());
             }
             catch (InterruptedException e)
             {
@@ -51,15 +52,38 @@ public class InvocatoreGiocatore implements Runnable {
         }
     }
  
-    public InvocatoreGiocatore(GameManager gm) throws Exception
+    public InvocatoreGiocatore(GameManager gm, long periodo) throws Exception
     {
         this.gm = gm;
+        this.periodo = periodo;
         this.t = new Thread(this);
         this.ga = GiocatoreAutomatico.getGiocatoreAutomatico();
     }
     
     public void start()
     {
-        t.start();
+        getThread().start();
     }
+
+    /**
+     * @return the Thread
+     */
+    public Thread getThread() {
+        return t;
+    }
+
+    /**
+     * @return the periodo
+     */
+    public long getPeriodo() {
+        return periodo;
+    }
+
+    /**
+     * @param periodo the periodo to set
+     */
+    public void setPeriodo(long periodo) {
+        this.periodo = periodo;
+    }
+    
 }
