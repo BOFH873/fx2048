@@ -469,10 +469,9 @@ public class GameManager extends Group {
     }
 
     interface AddTile {
-
         void add(int value, int x, int y);
     }
-http://stackoverflow.com/questions/13154562/have-i-lost-my-changes-after-rebasing
+
     /**
      * Initializes all cells in gameGrid map to null
      */
@@ -697,94 +696,27 @@ http://stackoverflow.com/questions/13154562/have-i-lost-my-changes-after-rebasin
      * Crea il dialogue per scegliere se giocare manualmente o lasciar giocare il giocatore automatico
      **/
     public void scegliGiocatore(){
-		layerOnProperty.set(true);
-		hOvrLabel.getStyleClass().setAll("over");
-		hOvrLabel.setMinSize(GRID_WIDTH, GRID_WIDTH);
-		Label lblSceltaGiocatore = new Label("Who plays?");
-		lblSceltaGiocatore.getStyleClass().add("lblOver"); 
-		hOvrLabel.setAlignment(Pos.TOP_CENTER);
-                hOvrLabel.setMargin(lblSceltaGiocatore, new Insets(30, 0, 10, 0));
-		hOvrLabel.getChildren().setAll(lblSceltaGiocatore);
-		hOvrLabel.setTranslateY(TOP_HEIGHT + vGame.getSpacing());
-		this.getChildren().add(hOvrLabel);
-                
-                
-                
-                vButton.setMinSize(GRID_WIDTH, GRID_WIDTH / 2);
-		vButton.setSpacing(30);
-                vButton.setAlignment(Pos.TOP_CENTER);
-                vButton.setPadding(new Insets(0, 150, 10, 150));
-		vButton.setTranslateY(TOP_HEIGHT + vGame.getSpacing() + (GRID_WIDTH )/ 3);
-                
-                
-		Button bHumanPlayer = new Button("Human Player");
-		bHumanPlayer.getStyleClass().add("try");
-		
-		bHumanPlayer.setOnAction(e -> {
-			automaticPlayerProperty.set(false);
-			layerOnProperty.set(false);
-			resetGame();
-		});
-                
-                bHumanPlayer.setOnTouchPressed(e -> {
-			automaticPlayerProperty.set(false);
-			layerOnProperty.set(false);
-			resetGame();
-		});
-		
-		Button bAutomaticPlayer = new Button("Automatic Player");
-		bAutomaticPlayer.getStyleClass().add("try");
-		
-		bAutomaticPlayer.setOnTouchPressed(e -> {
-			automaticPlayerProperty.set(true);
-			layerOnProperty.set(false);
-			resetGame();
-		});
-		
-		bAutomaticPlayer.setOnAction(e -> {
-			automaticPlayerProperty.set(true);
-			layerOnProperty.set(false);
-			resetGame();
-		});
-                
-                Button statisticsButton = new Button("A.P. Statistics");
-		statisticsButton.getStyleClass().add("try");
-		
-		statisticsButton.setOnAction(e -> {
-			automaticPlayerProperty.set(true);
-                        statisticsVisualizationProperty.set(true);
-			layerOnProperty.set(false);
-			resetGame();
-		});
-                statisticsButton.setOnTouchPressed(e -> {
-			automaticPlayerProperty.set(true);
-                        statisticsVisualizationProperty.set(true);
-			layerOnProperty.set(false);
-			resetGame();
-		});
-
-                vButton.getChildren().setAll(bHumanPlayer, bAutomaticPlayer, statisticsButton);
-                
-		this.getChildren().addAll(vButton);	
-                
-                
-                
-                
-	}
         layerOnProperty.set(true);
         hOvrLabel.getStyleClass().setAll("over");
         hOvrLabel.setMinSize(GRID_WIDTH, GRID_WIDTH);
         Label lblSceltaGiocatore = new Label("Who plays?");
         lblSceltaGiocatore.getStyleClass().add("lblOver"); 
-        hOvrLabel.setAlignment(Pos.CENTER);
+        hOvrLabel.setAlignment(Pos.TOP_CENTER);
+        hOvrLabel.setMargin(lblSceltaGiocatore, new Insets(30, 0, 10, 0));
         hOvrLabel.getChildren().setAll(lblSceltaGiocatore);
         hOvrLabel.setTranslateY(TOP_HEIGHT + vGame.getSpacing());
         this.getChildren().add(hOvrLabel);
 
-        hOvrButton.setMinSize(GRID_WIDTH, GRID_WIDTH / 2);
-        hOvrButton.setSpacing(30);
 
-        Button bHumanPlayer = new Button("Human\nPlayer");
+
+        vButton.setMinSize(GRID_WIDTH, GRID_WIDTH / 2);
+        vButton.setSpacing(30);
+        vButton.setAlignment(Pos.TOP_CENTER);
+        vButton.setPadding(new Insets(0, 150, 10, 150));
+        vButton.setTranslateY(TOP_HEIGHT + vGame.getSpacing() + (GRID_WIDTH )/ 3);
+
+
+        Button bHumanPlayer = new Button("Human Player");
         bHumanPlayer.getStyleClass().add("try");
 
         bHumanPlayer.setOnAction(e -> {
@@ -793,27 +725,46 @@ http://stackoverflow.com/questions/13154562/have-i-lost-my-changes-after-rebasin
                 resetGame();
         });
 
-        Button bAutomaticPlayer = new Button("Automatic\nPlayer");
+        bHumanPlayer.setOnTouchPressed(e -> {
+                automaticPlayerProperty.set(false);
+                layerOnProperty.set(false);
+                resetGame();
+        });
+
+        Button bAutomaticPlayer = new Button("Automatic Player");
         bAutomaticPlayer.getStyleClass().add("try");
 
-        //bAutomaticPlayer.setOnTouchPressed(e -> resetGame());
-        //bAutomaticPlayer.setOnAction(e -> resetGame());
+        bAutomaticPlayer.setOnTouchPressed(e -> {
+                automaticPlayerProperty.set(true);
+                layerOnProperty.set(false);
+                resetGame();
+        });
+
         bAutomaticPlayer.setOnAction(e -> {
                 automaticPlayerProperty.set(true);
                 layerOnProperty.set(false);
                 resetGame();
         });
-        
-        Button bStat =  new Button("Stats");
-        bStat.setOnAction(e -> {
-               clearBox();
-               showStat();        
+
+        Button statisticsButton = new Button("A.P. Statistics");
+        statisticsButton.getStyleClass().add("try");
+
+        statisticsButton.setOnAction(e -> {
+                automaticPlayerProperty.set(true);
+                statisticsVisualizationProperty.set(true);
+                layerOnProperty.set(false);
+                resetGame();
+        });
+        statisticsButton.setOnTouchPressed(e -> {
+                automaticPlayerProperty.set(true);
+                statisticsVisualizationProperty.set(true);
+                layerOnProperty.set(false);
+                resetGame();
         });
 
-        hOvrButton.setAlignment(Pos.CENTER);
-        hOvrButton.getChildren().setAll(bHumanPlayer, bAutomaticPlayer, bStat);
-        hOvrButton.setTranslateY(TOP_HEIGHT + vGame.getSpacing() + GRID_WIDTH / 2);
-        this.getChildren().add(hOvrButton);
+        vButton.getChildren().setAll(bHumanPlayer, bAutomaticPlayer, statisticsButton);
+
+        this.getChildren().addAll(vButton);
     }
     
     private void clearBox() {
