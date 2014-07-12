@@ -4,11 +4,11 @@ CHI SIAMO
 ===================
 Gruppo 10
 
-Andrea Atzeni
-Claudia Cauli
-Annalisa Congiu
-Davide Salaris
-Michele Zaccheddu
+* Andrea Atzeni*
+* Claudia Cauli*
+* Annalisa Congiu*
+* Davide Salaris*
+* Michele Zaccheddu*
 
 LICENZA
 ===================
