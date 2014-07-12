@@ -703,6 +703,8 @@ public class GameManager extends Group {
      * Converte la gameGrid di GameManager in una Griglia, in modo da renderla
      * utilizzabile dal GiocatoreAutomatico.
      * 
+     * @author BOFH873
+     * 
      * @return la Griglia corrispondente al gameGrid attuale.
      */
     public Griglia getGriglia ()
