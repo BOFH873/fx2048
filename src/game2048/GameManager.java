@@ -44,6 +44,9 @@ import javafx.scene.control.TableColumn;
 import javafx.geometry.Insets;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.collections.ObservableList;
+import javafx.collections.FXCollections;
+import javafx.beans.property.SimpleStringProperty;
 
 import giocatoreAutomatico.Griglia;
 import javafx.geometry.Orientation;
@@ -61,7 +64,7 @@ public class GameManager extends Group {
     // grid_width=4*cell_size + 2*cell_stroke/2d (14px css)+2*grid_stroke/2d (2 px css)
     private static final int GRID_WIDTH = CELL_SIZE * DEFAULT_GRID_SIZE + BORDER_WIDTH * 2;
     private static final int TOP_HEIGHT = 92;
-    private static final int PLAYS_NUMBER = 3;
+    private static final int PLAYS_NUMBER = 2;
     private static final long PERIODO = 150;
     private static final long PERIODO_STATS = 50;
 
@@ -82,7 +85,7 @@ public class GameManager extends Group {
     private final BooleanProperty statsOnProperty = new SimpleBooleanProperty(false);
     private final IntegerProperty statsNProperty = new SimpleIntegerProperty(0);
     
-    private static List<Tripla> statistics = new ArrayList<Tripla>();
+    private static ObservableList<Tripla> statistics = FXCollections.observableArrayList();
     
     // User Interface controls
     private final VBox vGame = new VBox(50);
@@ -386,13 +389,14 @@ public class GameManager extends Group {
                     this.maxScore = gameScoreProperty.get();
 
                     statistics.add(new Tripla(maxMoves, maxScore, maxValue));
+                    this.maxMoves = 0;
                     statsNProperty.set(statsNProperty.get() -1);
                     
                     resetGame();
                 }
                 if (statsNProperty.isEqualTo(0).get())
                 {
-                    showStat();
+                    showStat(statistics);
                 }
             }
         });
@@ -824,12 +828,14 @@ public class GameManager extends Group {
         statisticsButton.setOnAction(e -> {
                 automaticPlayerProperty.set(true);
                 statsOnProperty.set(true);
+                statistics.clear();
                 statsNProperty.set(PLAYS_NUMBER);
                 resetGame();
         });
         statisticsButton.setOnTouchPressed(e -> {
                 automaticPlayerProperty.set(true);
                 statsOnProperty.set(true);
+                statistics.clear();
                 statsNProperty.set(PLAYS_NUMBER);
                 resetGame();
         });
@@ -857,7 +863,7 @@ public class GameManager extends Group {
      * @param list Contiene tutte le partite effettute
      */
     
-    private void showStat(/*Tripla[] dataIn*/) {
+    private void showStat(ObservableList<Tripla> data) {
         
         layerOnProperty.set(true);
         
@@ -865,67 +871,75 @@ public class GameManager extends Group {
         VBox vPrinc = new VBox();
         VBox vSecond = new VBox();
         HBox hOvrLabelStat = new HBox();
-        HBox hOvrScore = new HBox();
-        HBox hOvrMoves = new HBox();
-        HBox hOvrDiv = new HBox();
+        HBox hOvrMaxScore = new HBox();
+        HBox hOvrAvg = new HBox();
+        HBox hOvrMaxTile = new HBox();
         VBox vOvrScrl = new VBox();
         ScrollPane sp = new ScrollPane();
-        TableView<MatchStat> table = new TableView<>();
-        
-        //ObservableList data = FXCollections.observableArrayList(data);               DA DECOMMENTARE
-        //Tripla maxData = new Tripla();        DA DECOMMENTARE
-        
-        
+        TableView<Tripla> table = new TableView<>();
         
         Label lbl = new Label("Statistiche");
         lbl.getStyleClass().add("subtitle");
         hOvrLabelStat.getChildren().add(lbl);
         
-        Label lblScoreStat = new Label("Punteggio max: ");
-        Label valScore = new Label(/*maxData.getMaxScore()*/);    // DA DECOMMENTARE E CASTARE
-        hOvrScore.setSpacing(vGame.getSpacing());
-        lblScoreStat.getStyleClass().add("labelStat");
-        valScore.getStyleClass().add("labelStat");        
-        hOvrScore.getChildren().addAll(lblScoreStat, valScore);
+        int maxScore = 0;
+        int avg = 0;
+        int maxTile = 0;
+        for (Tripla t: data)
+        {
+            avg += t.getMaxScoreAsInt();
+            maxScore = (t.getMaxScoreAsInt() > maxScore) ? t.getMaxScoreAsInt() : maxScore;
+            maxTile = (t.getMaxValueAsInt() > maxTile) ? t.getMaxValueAsInt() : maxTile;
+        }
+        avg /= data.size();
         
-        Label lblMoves = new Label("Mosse min: ");
-        Label valMoves = new Label(/*maxData.getMaxMoves()*/);    // DA DECOMMENTARE E CASTARE
-        hOvrMoves.setSpacing(vGame.getSpacing());
-        lblMoves.getStyleClass().add("labelStat");
-        valMoves.getStyleClass().add("labelStat");
-        hOvrMoves.getChildren().addAll(lblMoves, valMoves);
+        Label lblMaxScore = new Label("Punteggio max: ");
+        Label valMaxScore = new Label(Integer.toString(maxScore));    // DA DECOMMENTARE E CASTARE
+        hOvrMaxScore.setSpacing(vGame.getSpacing());
+        lblMaxScore.getStyleClass().add("labelStat");
+        valMaxScore.getStyleClass().add("labelStat");        
+        hOvrMaxScore.getChildren().addAll(lblMaxScore, valMaxScore);
         
-        Label lblDiv = new Label("Rapporto p/m: ");
-        Label valDiv = new Label(/*maxData.getMaxScore() / maxData.getMaxMoves()*/);    // DA DECOMMENTARE E CASTARE
-        hOvrDiv.setSpacing(vGame.getSpacing());
-        lblDiv.getStyleClass().add("labelStat");
-        valDiv.getStyleClass().add("labelStat");
-        hOvrDiv.getChildren().addAll(lblDiv, valDiv);
+        Label lblAvg = new Label("Media punti: ");
+        Label valAvg = new Label(Integer.toString(avg));    // DA DECOMMENTARE E CASTARE
+        hOvrAvg.setSpacing(vGame.getSpacing());
+        lblAvg.getStyleClass().add("labelStat");
+        valAvg.getStyleClass().add("labelStat");
+        hOvrAvg.getChildren().addAll(lblAvg, valAvg);
+        
+        Label lblMaxTile = new Label("Tile max: ");
+        Label valMaxTile = new Label(Integer.toString(maxTile));    // DA DECOMMENTARE E CASTARE
+        hOvrMaxTile.setSpacing(vGame.getSpacing());
+        lblMaxTile.getStyleClass().add("labelStat");
+        valMaxTile.getStyleClass().add("labelStat");
+        hOvrMaxTile.getChildren().addAll(lblMaxTile, valMaxTile);
         
         Label scrollTitle = new Label("Statistiche complete: ");
         scrollTitle.getStyleClass().add("labelStat");
-        
-        //table.setItem(data);
-        
+                
         TableColumn matchCol = new TableColumn("Partita n.");
         TableColumn param1Col = new TableColumn("V/S");
-        TableColumn<MatchStat, String> param2Col = new TableColumn<>("Punteggio");
-        TableColumn<MatchStat, String> param3Col = new TableColumn<>("Mosse");
-        TableColumn<MatchStat, String> param4Col = new TableColumn<>("Valore raggiunto");
+        TableColumn scoreCol = new TableColumn<>("Punteggio");
+        TableColumn movesCol = new TableColumn<>("Mosse");
+        TableColumn valueCol = new TableColumn<>("Valore raggiunto");
         
         matchCol.setMinWidth(GRID_WIDTH / 5);
         param1Col.setMinWidth(GRID_WIDTH / 5);
-        param2Col.setMinWidth(GRID_WIDTH / 5);
-        param3Col.setMinWidth(GRID_WIDTH / 5);
-        param4Col.setMinWidth(GRID_WIDTH / 5);
+        scoreCol.setMinWidth(GRID_WIDTH / 3);
+        movesCol.setMinWidth(GRID_WIDTH / 3);
+        valueCol.setMinWidth(GRID_WIDTH / 3);
         
         
-        //param2Col.setCellValueFactory(new PropertyValueFactory<MatchStat, String>("maxScore"));
-        //param3Col.setCellValueFactory(new PropertyValueFactory<MatchStat, String>("maxMoves"));
-        //param4Col.setCellValueFactory(new PropertyValueFactory<MatchStat, String>("maxValue"));
+        scoreCol.setCellValueFactory(new PropertyValueFactory<Tripla, String>("maxScore"));
+        movesCol.setCellValueFactory(new PropertyValueFactory<Tripla, String>("maxMoves"));
+        valueCol.setCellValueFactory(new PropertyValueFactory<Tripla, String>("maxValue"));
         
-        table.getColumns().addAll(matchCol, param1Col, param2Col, param3Col, param4Col);
+//        table.getColumns().addAll(matchCol, param1Col, scoreCol, movesCol, valueCol);
+        table.getColumns().addAll(scoreCol, movesCol, valueCol);        
         table.getStyleClass().add("table");
+
+        table.setItems(data);
+
         
         sp.setContent(table);
         sp.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -939,7 +953,7 @@ public class GameManager extends Group {
         
         vPrinc.setSpacing(15);
         vPrinc.setPadding(new Insets(10));
-        vPrinc.getChildren().addAll(hOvrScore, hOvrMoves, hOvrDiv);
+        vPrinc.getChildren().addAll(hOvrMaxScore, hOvrAvg, hOvrMaxTile);
         
         Button bBack = new Button("Back");
         bBack.getStyleClass().add("try");
@@ -970,7 +984,7 @@ public class GameManager extends Group {
      * @author Claudia
      * 
      */
-    private class  Tripla{
+    public class  Tripla{
         private int maxScore;
         private int maxValue;
         private int maxMoves;
@@ -983,30 +997,25 @@ public class GameManager extends Group {
         
         /** Metodo getter della variabile maxScore
          * @Author Claudia
-         * @return Valore intero del punteggio massimo
+         * @return Stringa rappresentante il punteggio massimo.
          */
-        public int getMaxScore(){ return this.maxScore; }
+        public String getMaxScore(){ return Integer.toString(this.maxScore); }
         /** Metodo getter della variabile maxMoves
          * @author Claudia
-         * @return valore intero del numero mosse
+         * @return Stringa rappresentante il numero di mosse.
          */
-        public int getMaxMoves(){ return this.maxMoves; }
+        public String getMaxMoves(){ return Integer.toString(this.maxMoves); }
         /** Metodo getter della variabile maxValue.
          * @author Claudia
-         * @return Valore intero del valore massimo raggiunto. 
+         * @return Stringa rappresentante il valore massimo raggiunto.
          */
-        public int getMaxValue(){ return this.maxValue; }
+        public String getMaxValue(){ return Integer.toString(this.maxValue); }
+
+        public int getMaxScoreAsInt(){ return this.maxScore; }
+        public int getMaxMovesAsInt(){ return this.maxMoves; }
+        public int getMaxValueAsInt(){ return this.maxValue; }
     }
     
-
-    
-    private interface MatchStat {
-        
-        public int getMaxScore();
-        public int getMaxValue();
-        public int getMaxMoves();        
-    }
-
 }
 
 
