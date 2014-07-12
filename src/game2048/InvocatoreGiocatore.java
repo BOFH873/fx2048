@@ -9,7 +9,7 @@ import javafx.application.Platform;
  * GiocatoreAutomatico.
  * 
  * 
- * @author drgb
+ * @author BOFH873
  */
 public class InvocatoreGiocatore implements Runnable {
 
@@ -27,7 +27,6 @@ public class InvocatoreGiocatore implements Runnable {
      * delle mosse (invocando GameManager.move()) seguendo le direzioni indicate
      * volta per volta da GiocatoreAutomatico.prossimaMossa().
      */
-    @Override
     public void run()
     {    
         while (!gm.isLayerOn())
@@ -51,7 +50,15 @@ public class InvocatoreGiocatore implements Runnable {
             }
         }
     }
- 
+    /**
+     * Costruttore per InvocatoreGiocatore, inizializza gli attributi principali
+     * della classe e tenta di recuperare il GiocatoreAutomatico.
+     * 
+     * @param gm la classe GameManager che sta istanziando l'oggetto.
+     * @param periodo il periodo (in millisecondi) fra una mossa e l'altra.
+     * @throws Exception - lanciata nel caso in cui getGiocatoreAutomatico() dovesse
+     *                      fallire nella ricerca della classe.
+     */
     public InvocatoreGiocatore(GameManager gm, long periodo) throws Exception
     {
         this.gm = gm;
@@ -60,27 +67,36 @@ public class InvocatoreGiocatore implements Runnable {
         this.ga = GiocatoreAutomatico.getGiocatoreAutomatico();
     }
     
+    /**
+     * Avvia il Thread che invoca il GiocatoreAutomatico.
+     */
     public void start()
     {
         getThread().start();
     }
 
     /**
-     * @return the Thread
+     * Getter per il thread.
+     * 
+     * @return il Thread attuale del GA
      */
     public Thread getThread() {
         return t;
     }
 
     /**
-     * @return the periodo
+     * Getter per il periodo.
+     * 
+     * @return il periodo attuale di questo invocatore.
      */
     public long getPeriodo() {
         return periodo;
     }
 
     /**
-     * @param periodo the periodo to set
+     * Setter per il periodo.
+     * 
+     * @param periodo il nuovo valore del periodo.
      */
     public void setPeriodo(long periodo) {
         this.periodo = periodo;
