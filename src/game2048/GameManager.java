@@ -64,8 +64,20 @@ public class GameManager extends Group {
     // grid_width=4*cell_size + 2*cell_stroke/2d (14px css)+2*grid_stroke/2d (2 px css)
     private static final int GRID_WIDTH = CELL_SIZE * DEFAULT_GRID_SIZE + BORDER_WIDTH * 2;
     private static final int TOP_HEIGHT = 92;
-    private static final int PLAYS_NUMBER = 2;
+    
+    /**
+     * Numero di simulazioni effettuate quando l'utente avvia le statistiche.
+     */
+    private static final int PLAYS_NUMBER = 3;
+    
+    /**
+     * Periodo fra le mosse quando si usa il giocatore automatico in mod. partita singola.
+     */
     private static final long PERIODO = 150;
+    
+    /**
+     * Periodo fra le mosse quando si effettuano statistiche sul GA.
+     */
     private static final long PERIODO_STATS = 50;
 
     private volatile boolean movingTiles = false;
