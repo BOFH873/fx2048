@@ -61,9 +61,9 @@ public class GameManager extends Group {
     // grid_width=4*cell_size + 2*cell_stroke/2d (14px css)+2*grid_stroke/2d (2 px css)
     private static final int GRID_WIDTH = CELL_SIZE * DEFAULT_GRID_SIZE + BORDER_WIDTH * 2;
     private static final int TOP_HEIGHT = 92;
-    private static final int PLAYS_NUMBER = 10;
-    private static final long PERIODO = 500;
-    private static final long PERIODO_STATS = 100;
+    private static final int PLAYS_NUMBER = 3;
+    private static final long PERIODO = 150;
+    private static final long PERIODO_STATS = 50;
 
     private volatile boolean movingTiles = false;
     private final int gridSize;
@@ -72,7 +72,6 @@ public class GameManager extends Group {
     private final List<Location> locations = new ArrayList<>();
     private final Map<Location, Tile> gameGrid;
     private final BooleanProperty automaticPlayerProperty = new SimpleBooleanProperty(false);
-    private final BooleanProperty statisticsVisualizationProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty gameWonProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty gameOverProperty = new SimpleBooleanProperty(false);
     private final IntegerProperty gameScoreProperty = new SimpleIntegerProperty(0);
@@ -81,20 +80,22 @@ public class GameManager extends Group {
     private final ParallelTransition parallelTransition = new ParallelTransition();
     private final BooleanProperty layerOnProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty statsOnProperty = new SimpleBooleanProperty(false);
+    private final IntegerProperty statsNProperty = new SimpleIntegerProperty(0);
     
     private static List<Tripla> statistics = new ArrayList<Tripla>();
     
     // User Interface controls
     private final VBox vGame = new VBox(50);
-    private final Group gridGroup = new Group();
-
-    private final HBox hTop = new HBox(0);
-    private final HBox hBottom = new HBox();
-    private final Label lblScore = new Label("0");
-    private final Label lblPoints = new Label();
     private final HBox hOvrLabel = new HBox();
     private final HBox hOvrButton = new HBox();
     private final VBox vButton = new VBox();
+
+    private Group gridGroup = new Group();
+
+    private HBox hBottom = new HBox();
+    private HBox hTop = new HBox(0);
+    private Label lblScore = new Label("0");
+    private Label lblPoints = new Label();
     
     
     // Statistic's variables
@@ -137,10 +138,6 @@ public class GameManager extends Group {
         this.maxMoves = 0;
     }
     
-    /*
-        Propongo un altro costruttore per non dover caricare la griglia di gioco e poi cancellarla. ..spero di ricordarmi di proporlo xD
-    */
-
     public void move(Direction direction) {
         if (layerOnProperty.get()) {
             return;
@@ -182,12 +179,7 @@ public class GameManager extends Group {
                 gameMovePoints.set(gameMovePoints.get() + tileToBeMerged.getValue());
                 gameScoreProperty.set(gameScoreProperty.get() + tileToBeMerged.getValue());
 
-                if (tileToBeMerged.getValue() == FINAL_VALUE_TO_WIN) {
-                    this.maxScore = gameScoreProperty.get();
-                    this.maxValue = FINAL_VALUE_TO_WIN;
-                    if (statistics.size() <= PLAYS_NUMBER)
-                        statistics.add(new Tripla(maxMoves, maxScore, maxValue));
-                                     
+                if (tileToBeMerged.getValue() == FINAL_VALUE_TO_WIN && !statsOnProperty.get()) {
                     gameWonProperty.set(true);
                 }
                 return 1;
@@ -357,7 +349,7 @@ public class GameManager extends Group {
 
     private void initGameProperties() {
         gameOverProperty.addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
+            if (newValue && !statsOnProperty.get()) {
                 layerOnProperty.set(true);
                 hOvrLabel.getStyleClass().setAll("over");
                 hOvrLabel.setMinSize(GRID_WIDTH, GRID_WIDTH);
@@ -373,12 +365,10 @@ public class GameManager extends Group {
                 bTry.getStyleClass().setAll("try");
 
                 bTry.setOnTouchPressed(e -> {
-			layerOnProperty.set(false);
 			resetGame();
                         scegliGiocatore();
 		});
                 bTry.setOnAction(e -> {
-			layerOnProperty.set(false);
 			resetGame();
                         scegliGiocatore();
 		});
@@ -388,10 +378,27 @@ public class GameManager extends Group {
                 hOvrButton.setTranslateY(TOP_HEIGHT + vGame.getSpacing() + GRID_WIDTH / 2);
                 this.getChildren().add(hOvrButton);
             }
+            else if (newValue && statsOnProperty.get())
+            {
+                if (statsNProperty.greaterThan(0).get())
+                {
+                    this.maxValue = maxValue();
+                    this.maxScore = gameScoreProperty.get();
+
+                    statistics.add(new Tripla(maxMoves, maxScore, maxValue));
+                    statsNProperty.set(statsNProperty.get() -1);
+                    
+                    resetGame();
+                }
+                if (statsNProperty.isEqualTo(0).get())
+                {
+                    showStat();
+                }
+            }
         });
 
         gameWonProperty.addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
+            if (newValue && !statsOnProperty.get()) {
                 layerOnProperty.set(true);
                 hOvrLabel.getStyleClass().setAll("won");
                 hOvrLabel.setMinSize(GRID_WIDTH, GRID_WIDTH);
@@ -413,13 +420,9 @@ public class GameManager extends Group {
                 Button bTry = new Button("Try again");
                 bTry.getStyleClass().add("try");
                 bTry.setOnTouchPressed(e -> {
-			layerOnProperty.set(false);
-			resetGame();
                         scegliGiocatore();
 		});
                 bTry.setOnAction(e -> {
-			layerOnProperty.set(false);
-			resetGame();
                         scegliGiocatore();
 		});
                 hOvrButton.setAlignment(Pos.CENTER);
@@ -456,8 +459,10 @@ public class GameManager extends Group {
         layerOnProperty.addListener((observable, oldValue, newValue) -> {
             if (!newValue)
             {
-                if (isAutomaticPlayerSet())
+                if ((isAutomaticPlayerSet() && !statsOnProperty.get())
+                        || (statsOnProperty.get() && statsNProperty.greaterThan(0).get()))
                 {
+//                    System.out.println("statsNProperty: " + statsNProperty.get());
                     long periodo = PERIODO;
                     if (statsOnProperty.get()) periodo = PERIODO_STATS;
                     try
@@ -468,8 +473,8 @@ public class GameManager extends Group {
                     catch (Exception e)
                     {
                         automaticPlayerProperty.set(false);
-                        //AGGIUNGERE CODICE PER PULIZIA E RESET GIOCO
-                        //CON RIPETIZIONE SCELTA GIOCATORE
+                        resetGame();
+                        scegliGiocatore();
                     }
                 }
             }
@@ -629,11 +634,6 @@ public class GameManager extends Group {
     // after last movement on full grid, check if there are movements available
     private EventHandler<ActionEvent> onFinishNewlyAddedTile = e -> {
         if (this.gameGrid.values().parallelStream().noneMatch(Objects::isNull) && !mergeMovementsAvailable()) {
-            this.maxValue = maxValue();
-            this.maxScore = gameScoreProperty.get();
-            if (statistics.size() <= PLAYS_NUMBER)
-                statistics.add(new Tripla(maxMoves, maxScore, maxValue));
-                     
             this.gameOverProperty.set(true);
         }
     };
@@ -793,13 +793,13 @@ public class GameManager extends Group {
 
         bHumanPlayer.setOnAction(e -> {
                 automaticPlayerProperty.set(false);
-                layerOnProperty.set(false);
+                statsOnProperty.set(false);
                 resetGame();
         });
 
         bHumanPlayer.setOnTouchPressed(e -> {
                 automaticPlayerProperty.set(false);
-                layerOnProperty.set(false);
+                statsOnProperty.set(false);
                 resetGame();
         });
 
@@ -808,13 +808,13 @@ public class GameManager extends Group {
 
         bAutomaticPlayer.setOnTouchPressed(e -> {
                 automaticPlayerProperty.set(true);
-                layerOnProperty.set(false);
+                statsOnProperty.set(false);
                 resetGame();
         });
 
         bAutomaticPlayer.setOnAction(e -> {
                 automaticPlayerProperty.set(true);
-                layerOnProperty.set(false);
+                statsOnProperty.set(false);
                 resetGame();
         });
 
@@ -823,14 +823,14 @@ public class GameManager extends Group {
 
         statisticsButton.setOnAction(e -> {
                 automaticPlayerProperty.set(true);
-                statisticsVisualizationProperty.set(true);
-                layerOnProperty.set(false);
+                statsOnProperty.set(true);
+                statsNProperty.set(PLAYS_NUMBER);
                 resetGame();
         });
         statisticsButton.setOnTouchPressed(e -> {
                 automaticPlayerProperty.set(true);
-                statisticsVisualizationProperty.set(true);
-                layerOnProperty.set(false);
+                statsOnProperty.set(true);
+                statsNProperty.set(PLAYS_NUMBER);
                 resetGame();
         });
 
@@ -841,8 +841,16 @@ public class GameManager extends Group {
     
     private void clearBox() {
     
-        vGame.getChildren().remove(hBottom);
-        this.getChildren().removeAll(hOvrButton, hOvrLabel);
+            vGame.getChildren().clear();
+            lblScore = new Label("0");
+            lblPoints = new Label();
+            hTop = new HBox(0);
+            gridGroup = new Group();
+            hBottom = new HBox();
+            getChildren().clear();
+            createScore();
+            createGrid();
+            scegliGiocatore();
     }
     
     /**
@@ -850,6 +858,8 @@ public class GameManager extends Group {
      */
     
     private void showStat(/*Tripla[] dataIn*/) {
+        
+        layerOnProperty.set(true);
         
         VBox vTitle = new VBox();
         VBox vPrinc = new VBox();
@@ -931,12 +941,23 @@ public class GameManager extends Group {
         vPrinc.setPadding(new Insets(10));
         vPrinc.getChildren().addAll(hOvrScore, hOvrMoves, hOvrDiv);
         
+        Button bBack = new Button("Back");
+        bBack.getStyleClass().add("try");
+        bBack.setOnTouchPressed(e -> {
+            clearBox();
+        });
+        bBack.setOnAction(e -> {
+            clearBox();
+        });
+
+        
         vSecond.setSpacing(7);
         vSecond.setPadding(new Insets(10));
-        vSecond.getChildren().add(vOvrScrl);
+        vSecond.getChildren().addAll(vOvrScrl, bBack);
         
         vGame.setSpacing(20);
-        vGame.getChildren().addAll(vTitle, vPrinc, vSecond);
+//        vGame.getChildren().addAll(vTitle, vPrinc, vSecond);
+        vGame.getChildren().setAll(vTitle, vPrinc, vSecond);
     }
     
     private double getRatio(int score, int moves) {
