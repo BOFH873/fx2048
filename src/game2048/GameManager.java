@@ -339,7 +339,6 @@ public class GameManager extends Group {
         gridGroup.setLayoutX(BORDER_WIDTH);
         gridGroup.setLayoutY(BORDER_WIDTH);
 
-        //HBox hBottom = new HBox();        Scope esteso a globale
         hBottom.getStyleClass().add("backGrid");
         hBottom.setMinSize(GRID_WIDTH, GRID_WIDTH);
         hBottom.setPrefSize(GRID_WIDTH, GRID_WIDTH);
@@ -466,7 +465,6 @@ public class GameManager extends Group {
                 if ((isAutomaticPlayerSet() && !statsOnProperty.get())
                         || (statsOnProperty.get() && statsNProperty.greaterThan(0).get()))
                 {
-//                    System.out.println("statsNProperty: " + statsNProperty.get());
                     long periodo = PERIODO;
                     if (statsOnProperty.get()) periodo = PERIODO_STATS;
                     try
@@ -700,31 +698,13 @@ public class GameManager extends Group {
             }
         return this.maxValue;
     }
-    
-    /** Metodo getter della variabile maxValue 
-     * @author Claudia
-     * @return Valore intero del valore massimo raggiunto.
+                    
+    /**
+     * Converte la gameGrid di GameManager in una Griglia, in modo da renderla
+     * utilizzabile dal GiocatoreAutomatico.
+     * 
+     * @return la Griglia corrispondente al gameGrid attuale.
      */
-    public int getMaxValue(){
-        return this.maxValue;
-    }
-    
-    /** Metodo getter della variabile maxScore
-     * @author Claudia
-     * @return Valore intero del massimo punteggio ottenuto.
-     */
-    public int getMaxScore(){
-        return this.maxScore;
-    }
-    
-    /** Metodo getter della variabile maxMoves
-     * @author Claudia
-     * @return Valore intero del numero di mosse.
-     */
-    public int getMaxMoves(){
-        return this.maxMoves;
-    }
-        
     public Griglia getGriglia ()
     {
         Griglia grid = new MyGriglia();
@@ -746,30 +726,28 @@ public class GameManager extends Group {
     }
 
     /**
-     * Restituisce true se la partita è finita, false se si sta giocando.
-     */
-    public boolean isGameOver() {
-        return gameOverProperty.get();
-    }
-    
-    /**
      * Wrapper per layerOnProperty.
+     * 
+     * @return valore attuale di layerOnProperty
      */
     public boolean isLayerOn() {
         return layerOnProperty.get();
     }
 
     /**
+     * Restituisce true se si è deciso di lasciar giocare il giocatore automatico.
+     * 
      * @author Annalisa
-     * Restituisce true se si è deciso di lasciar giocare il giocatore automatico
+     * 
      * @return true if the user decides to let the authomatic player play; false if the user decides to play.
     **/
     public boolean isAutomaticPlayerSet(){
-		return automaticPlayerProperty.get();
+        return automaticPlayerProperty.get();
     }
     /**
+     * Crea il dialogue per scegliere se giocare manualmente o lasciar giocare il giocatore automatico.
+     * 
      * @author Annalisa
-     * Crea il dialogue per scegliere se giocare manualmente o lasciar giocare il giocatore automatico
      **/
     public void scegliGiocatore(){
         layerOnProperty.set(true);
@@ -844,7 +822,11 @@ public class GameManager extends Group {
 
         this.getChildren().addAll(vButton);
     }
-    
+    /**
+     * Ripulisce l'interfaccia dopo che sono state visualizzate le statistiche
+     * tramite showStat(). Viene richiamata da showStat() appena l'utente clicca il
+     * bottone "Back".
+     */
     private void clearBox() {
     
             vGame.getChildren().clear();
@@ -860,9 +842,11 @@ public class GameManager extends Group {
     }
     
     /**
-     * @param list Contiene tutte le partite effettute
-     */
-    
+     * Avvia l'interfaccia che mostra le statistiche sulle partite effettuate
+     * dall'IA.
+     * 
+     * @param data Contiene tutte le partite effettute.
+     */    
     private void showStat(ObservableList<Tripla> data) {
         
         layerOnProperty.set(true);
@@ -894,21 +878,21 @@ public class GameManager extends Group {
         avg /= data.size();
         
         Label lblMaxScore = new Label("Punteggio max: ");
-        Label valMaxScore = new Label(Integer.toString(maxScore));    // DA DECOMMENTARE E CASTARE
+        Label valMaxScore = new Label(Integer.toString(maxScore));
         hOvrMaxScore.setSpacing(vGame.getSpacing());
         lblMaxScore.getStyleClass().add("labelStat");
         valMaxScore.getStyleClass().add("labelStat");        
         hOvrMaxScore.getChildren().addAll(lblMaxScore, valMaxScore);
         
         Label lblAvg = new Label("Media punti: ");
-        Label valAvg = new Label(Integer.toString(avg));    // DA DECOMMENTARE E CASTARE
+        Label valAvg = new Label(Integer.toString(avg));
         hOvrAvg.setSpacing(vGame.getSpacing());
         lblAvg.getStyleClass().add("labelStat");
         valAvg.getStyleClass().add("labelStat");
         hOvrAvg.getChildren().addAll(lblAvg, valAvg);
         
         Label lblMaxTile = new Label("Tile max: ");
-        Label valMaxTile = new Label(Integer.toString(maxTile));    // DA DECOMMENTARE E CASTARE
+        Label valMaxTile = new Label(Integer.toString(maxTile));
         hOvrMaxTile.setSpacing(vGame.getSpacing());
         lblMaxTile.getStyleClass().add("labelStat");
         valMaxTile.getStyleClass().add("labelStat");
@@ -934,7 +918,6 @@ public class GameManager extends Group {
         movesCol.setCellValueFactory(new PropertyValueFactory<Tripla, String>("maxMoves"));
         valueCol.setCellValueFactory(new PropertyValueFactory<Tripla, String>("maxValue"));
         
-//        table.getColumns().addAll(matchCol, param1Col, scoreCol, movesCol, valueCol);
         table.getColumns().addAll(scoreCol, movesCol, valueCol);        
         table.getStyleClass().add("table");
 
@@ -970,14 +953,13 @@ public class GameManager extends Group {
         vSecond.getChildren().addAll(vOvrScrl, bBack);
         
         vGame.setSpacing(20);
-//        vGame.getChildren().addAll(vTitle, vPrinc, vSecond);
         vGame.getChildren().setAll(vTitle, vPrinc, vSecond);
     }
     
-    private double getRatio(int score, int moves) {
-        return score/moves;
-    }
-    
+    /**
+     * Classe che implementa l'interfaccia Griglia per poter interagire col
+     * GiocatoreAutomatico.
+     */
     private class MyGriglia extends HashMap<Location, Integer> implements Griglia {}
     
     /** Classe interna necessaria per gestire in un unico oggetto i tre dati.  
