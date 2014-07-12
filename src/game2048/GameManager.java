@@ -44,6 +44,9 @@ import javafx.scene.control.TableColumn;
 import javafx.geometry.Insets;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.collections.ObservableList;
+import javafx.collections.FXCollections;
+import javafx.beans.property.SimpleStringProperty;
 
 import giocatoreAutomatico.Griglia;
 import javafx.geometry.Orientation;
@@ -61,9 +64,21 @@ public class GameManager extends Group {
     // grid_width=4*cell_size + 2*cell_stroke/2d (14px css)+2*grid_stroke/2d (2 px css)
     private static final int GRID_WIDTH = CELL_SIZE * DEFAULT_GRID_SIZE + BORDER_WIDTH * 2;
     private static final int TOP_HEIGHT = 92;
-    private static final int PLAYS_NUMBER = 10;
-    private static final long PERIODO = 500;
-    private static final long PERIODO_STATS = 100;
+    
+    /**
+     * Numero di simulazioni effettuate quando l'utente avvia le statistiche.
+     */
+    private static final int PLAYS_NUMBER = 3;
+    
+    /**
+     * Periodo fra le mosse quando si usa il giocatore automatico in mod. partita singola.
+     */
+    private static final long PERIODO = 150;
+    
+    /**
+     * Periodo fra le mosse quando si effettuano statistiche sul GA.
+     */
+    private static final long PERIODO_STATS = 50;
 
     private volatile boolean movingTiles = false;
     private final int gridSize;
@@ -72,7 +87,6 @@ public class GameManager extends Group {
     private final List<Location> locations = new ArrayList<>();
     private final Map<Location, Tile> gameGrid;
     private final BooleanProperty automaticPlayerProperty = new SimpleBooleanProperty(false);
-    private final BooleanProperty statisticsVisualizationProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty gameWonProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty gameOverProperty = new SimpleBooleanProperty(false);
     private final IntegerProperty gameScoreProperty = new SimpleIntegerProperty(0);
@@ -81,20 +95,22 @@ public class GameManager extends Group {
     private final ParallelTransition parallelTransition = new ParallelTransition();
     private final BooleanProperty layerOnProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty statsOnProperty = new SimpleBooleanProperty(false);
+    private final IntegerProperty statsNProperty = new SimpleIntegerProperty(0);
     
-    private static List<Tripla> statistics = new ArrayList<Tripla>();
+    private static ObservableList<Tripla> statistics = FXCollections.observableArrayList();
     
     // User Interface controls
     private final VBox vGame = new VBox(50);
-    private final Group gridGroup = new Group();
-
-    private final HBox hTop = new HBox(0);
-    private final HBox hBottom = new HBox();
-    private final Label lblScore = new Label("0");
-    private final Label lblPoints = new Label();
     private final HBox hOvrLabel = new HBox();
     private final HBox hOvrButton = new HBox();
     private final VBox vButton = new VBox();
+
+    private Group gridGroup = new Group();
+
+    private HBox hBottom = new HBox();
+    private HBox hTop = new HBox(0);
+    private Label lblScore = new Label("0");
+    private Label lblPoints = new Label();
     
     
     // Statistic's variables
@@ -137,10 +153,6 @@ public class GameManager extends Group {
         this.maxMoves = 0;
     }
     
-    /*
-        Propongo un altro costruttore per non dover caricare la griglia di gioco e poi cancellarla. ..spero di ricordarmi di proporlo xD
-    */
-
     public void move(Direction direction) {
         if (layerOnProperty.get()) {
             return;
@@ -182,12 +194,7 @@ public class GameManager extends Group {
                 gameMovePoints.set(gameMovePoints.get() + tileToBeMerged.getValue());
                 gameScoreProperty.set(gameScoreProperty.get() + tileToBeMerged.getValue());
 
-                if (tileToBeMerged.getValue() == FINAL_VALUE_TO_WIN) {
-                    this.maxScore = gameScoreProperty.get();
-                    this.maxValue = FINAL_VALUE_TO_WIN;
-                    if (statistics.size() <= PLAYS_NUMBER)
-                        statistics.add(new Tripla(maxMoves, maxScore, maxValue));
-                                     
+                if (tileToBeMerged.getValue() == FINAL_VALUE_TO_WIN && !statsOnProperty.get()) {
                     gameWonProperty.set(true);
                 }
                 return 1;
@@ -344,7 +351,6 @@ public class GameManager extends Group {
         gridGroup.setLayoutX(BORDER_WIDTH);
         gridGroup.setLayoutY(BORDER_WIDTH);
 
-        //HBox hBottom = new HBox();        Scope esteso a globale
         hBottom.getStyleClass().add("backGrid");
         hBottom.setMinSize(GRID_WIDTH, GRID_WIDTH);
         hBottom.setPrefSize(GRID_WIDTH, GRID_WIDTH);
@@ -357,7 +363,7 @@ public class GameManager extends Group {
 
     private void initGameProperties() {
         gameOverProperty.addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
+            if (newValue && !statsOnProperty.get()) {
                 layerOnProperty.set(true);
                 hOvrLabel.getStyleClass().setAll("over");
                 hOvrLabel.setMinSize(GRID_WIDTH, GRID_WIDTH);
@@ -373,12 +379,10 @@ public class GameManager extends Group {
                 bTry.getStyleClass().setAll("try");
 
                 bTry.setOnTouchPressed(e -> {
-			layerOnProperty.set(false);
 			resetGame();
                         scegliGiocatore();
 		});
                 bTry.setOnAction(e -> {
-			layerOnProperty.set(false);
 			resetGame();
                         scegliGiocatore();
 		});
@@ -388,10 +392,28 @@ public class GameManager extends Group {
                 hOvrButton.setTranslateY(TOP_HEIGHT + vGame.getSpacing() + GRID_WIDTH / 2);
                 this.getChildren().add(hOvrButton);
             }
+            else if (newValue && statsOnProperty.get())
+            {
+                if (statsNProperty.greaterThan(0).get())
+                {
+                    this.maxValue = maxValue();
+                    this.maxScore = gameScoreProperty.get();
+
+                    statistics.add(new Tripla(maxMoves, maxScore, maxValue));
+                    this.maxMoves = 0;
+                    statsNProperty.set(statsNProperty.get() -1);
+                    
+                    resetGame();
+                }
+                if (statsNProperty.isEqualTo(0).get())
+                {
+                    showStat(statistics);
+                }
+            }
         });
 
         gameWonProperty.addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
+            if (newValue && !statsOnProperty.get()) {
                 layerOnProperty.set(true);
                 hOvrLabel.getStyleClass().setAll("won");
                 hOvrLabel.setMinSize(GRID_WIDTH, GRID_WIDTH);
@@ -413,13 +435,9 @@ public class GameManager extends Group {
                 Button bTry = new Button("Try again");
                 bTry.getStyleClass().add("try");
                 bTry.setOnTouchPressed(e -> {
-			layerOnProperty.set(false);
-			resetGame();
                         scegliGiocatore();
 		});
                 bTry.setOnAction(e -> {
-			layerOnProperty.set(false);
-			resetGame();
                         scegliGiocatore();
 		});
                 hOvrButton.setAlignment(Pos.CENTER);
@@ -456,7 +474,8 @@ public class GameManager extends Group {
         layerOnProperty.addListener((observable, oldValue, newValue) -> {
             if (!newValue)
             {
-                if (isAutomaticPlayerSet())
+                if ((isAutomaticPlayerSet() && !statsOnProperty.get())
+                        || (statsOnProperty.get() && statsNProperty.greaterThan(0).get()))
                 {
                     long periodo = PERIODO;
                     if (statsOnProperty.get()) periodo = PERIODO_STATS;
@@ -468,8 +487,8 @@ public class GameManager extends Group {
                     catch (Exception e)
                     {
                         automaticPlayerProperty.set(false);
-                        //AGGIUNGERE CODICE PER PULIZIA E RESET GIOCO
-                        //CON RIPETIZIONE SCELTA GIOCATORE
+                        resetGame();
+                        scegliGiocatore();
                     }
                 }
             }
@@ -629,11 +648,6 @@ public class GameManager extends Group {
     // after last movement on full grid, check if there are movements available
     private EventHandler<ActionEvent> onFinishNewlyAddedTile = e -> {
         if (this.gameGrid.values().parallelStream().noneMatch(Objects::isNull) && !mergeMovementsAvailable()) {
-            this.maxValue = maxValue();
-            this.maxScore = gameScoreProperty.get();
-            if (statistics.size() <= PLAYS_NUMBER)
-                statistics.add(new Tripla(maxMoves, maxScore, maxValue));
-                     
             this.gameOverProperty.set(true);
         }
     };
@@ -696,31 +710,15 @@ public class GameManager extends Group {
             }
         return this.maxValue;
     }
-    
-    /** Metodo getter della variabile maxValue 
-     * @author Claudia
-     * @return Valore intero del valore massimo raggiunto.
+                    
+    /**
+     * Converte la gameGrid di GameManager in una Griglia, in modo da renderla
+     * utilizzabile dal GiocatoreAutomatico.
+     * 
+     * @author BOFH873
+     * 
+     * @return la Griglia corrispondente al gameGrid attuale.
      */
-    public int getMaxValue(){
-        return this.maxValue;
-    }
-    
-    /** Metodo getter della variabile maxScore
-     * @author Claudia
-     * @return Valore intero del massimo punteggio ottenuto.
-     */
-    public int getMaxScore(){
-        return this.maxScore;
-    }
-    
-    /** Metodo getter della variabile maxMoves
-     * @author Claudia
-     * @return Valore intero del numero di mosse.
-     */
-    public int getMaxMoves(){
-        return this.maxMoves;
-    }
-        
     public Griglia getGriglia ()
     {
         Griglia grid = new MyGriglia();
@@ -742,30 +740,28 @@ public class GameManager extends Group {
     }
 
     /**
-     * Restituisce true se la partita è finita, false se si sta giocando.
-     */
-    public boolean isGameOver() {
-        return gameOverProperty.get();
-    }
-    
-    /**
      * Wrapper per layerOnProperty.
+     * 
+     * @return valore attuale di layerOnProperty
      */
     public boolean isLayerOn() {
         return layerOnProperty.get();
     }
 
     /**
+     * Restituisce true se si è deciso di lasciar giocare il giocatore automatico.
+     * 
      * @author Annalisa
-     * Restituisce true se si è deciso di lasciar giocare il giocatore automatico
+     * 
      * @return true if the user decides to let the authomatic player play; false if the user decides to play.
     **/
     public boolean isAutomaticPlayerSet(){
-		return automaticPlayerProperty.get();
+        return automaticPlayerProperty.get();
     }
     /**
+     * Crea il dialogue per scegliere se giocare manualmente o lasciar giocare il giocatore automatico.
+     * 
      * @author Annalisa
-     * Crea il dialogue per scegliere se giocare manualmente o lasciar giocare il giocatore automatico
      **/
     public void scegliGiocatore(){
         layerOnProperty.set(true);
@@ -793,13 +789,13 @@ public class GameManager extends Group {
 
         bHumanPlayer.setOnAction(e -> {
                 automaticPlayerProperty.set(false);
-                layerOnProperty.set(false);
+                statsOnProperty.set(false);
                 resetGame();
         });
 
         bHumanPlayer.setOnTouchPressed(e -> {
                 automaticPlayerProperty.set(false);
-                layerOnProperty.set(false);
+                statsOnProperty.set(false);
                 resetGame();
         });
 
@@ -808,13 +804,13 @@ public class GameManager extends Group {
 
         bAutomaticPlayer.setOnTouchPressed(e -> {
                 automaticPlayerProperty.set(true);
-                layerOnProperty.set(false);
+                statsOnProperty.set(false);
                 resetGame();
         });
 
         bAutomaticPlayer.setOnAction(e -> {
                 automaticPlayerProperty.set(true);
-                layerOnProperty.set(false);
+                statsOnProperty.set(false);
                 resetGame();
         });
 
@@ -823,14 +819,16 @@ public class GameManager extends Group {
 
         statisticsButton.setOnAction(e -> {
                 automaticPlayerProperty.set(true);
-                statisticsVisualizationProperty.set(true);
-                layerOnProperty.set(false);
+                statsOnProperty.set(true);
+                statistics.clear();
+                statsNProperty.set(PLAYS_NUMBER);
                 resetGame();
         });
         statisticsButton.setOnTouchPressed(e -> {
                 automaticPlayerProperty.set(true);
-                statisticsVisualizationProperty.set(true);
-                layerOnProperty.set(false);
+                statsOnProperty.set(true);
+                statistics.clear();
+                statsNProperty.set(PLAYS_NUMBER);
                 resetGame();
         });
 
@@ -838,84 +836,107 @@ public class GameManager extends Group {
 
         this.getChildren().addAll(vButton);
     }
-    
+    /**
+     * Ripulisce l'interfaccia dopo che sono state visualizzate le statistiche
+     * tramite showStat(). Viene richiamata da showStat() appena l'utente clicca il
+     * bottone "Back".
+     */
     private void clearBox() {
     
-        vGame.getChildren().remove(hBottom);
-        this.getChildren().removeAll(hOvrButton, hOvrLabel);
+            vGame.getChildren().clear();
+            lblScore = new Label("0");
+            lblPoints = new Label();
+            hTop = new HBox(0);
+            gridGroup = new Group();
+            hBottom = new HBox();
+            getChildren().clear();
+            createScore();
+            createGrid();
+            scegliGiocatore();
     }
     
     /**
-     * @param list Contiene tutte le partite effettute
-     */
-    
-    private void showStat(/*Tripla[] dataIn*/) {
+     * Avvia l'interfaccia che mostra le statistiche sulle partite effettuate
+     * dall'IA.
+     * 
+     * @param data Contiene tutte le partite effettute.
+     */    
+    private void showStat(ObservableList<Tripla> data) {
+        
+        layerOnProperty.set(true);
         
         VBox vTitle = new VBox();
         VBox vPrinc = new VBox();
         VBox vSecond = new VBox();
         HBox hOvrLabelStat = new HBox();
-        HBox hOvrScore = new HBox();
-        HBox hOvrMoves = new HBox();
-        HBox hOvrDiv = new HBox();
+        HBox hOvrMaxScore = new HBox();
+        HBox hOvrAvg = new HBox();
+        HBox hOvrMaxTile = new HBox();
         VBox vOvrScrl = new VBox();
         ScrollPane sp = new ScrollPane();
-        TableView<MatchStat> table = new TableView<>();
-        
-        //ObservableList data = FXCollections.observableArrayList(data);               DA DECOMMENTARE
-        //Tripla maxData = new Tripla();        DA DECOMMENTARE
-        
-        
+        TableView<Tripla> table = new TableView<>();
         
         Label lbl = new Label("Statistiche");
         lbl.getStyleClass().add("subtitle");
         hOvrLabelStat.getChildren().add(lbl);
         
-        Label lblScoreStat = new Label("Punteggio max: ");
-        Label valScore = new Label(/*maxData.getMaxScore()*/);    // DA DECOMMENTARE E CASTARE
-        hOvrScore.setSpacing(vGame.getSpacing());
-        lblScoreStat.getStyleClass().add("labelStat");
-        valScore.getStyleClass().add("labelStat");        
-        hOvrScore.getChildren().addAll(lblScoreStat, valScore);
+        int maxScore = 0;
+        int avg = 0;
+        int maxTile = 0;
+        for (Tripla t: data)
+        {
+            avg += t.getMaxScoreAsInt();
+            maxScore = (t.getMaxScoreAsInt() > maxScore) ? t.getMaxScoreAsInt() : maxScore;
+            maxTile = (t.getMaxValueAsInt() > maxTile) ? t.getMaxValueAsInt() : maxTile;
+        }
+        avg /= data.size();
         
-        Label lblMoves = new Label("Mosse min: ");
-        Label valMoves = new Label(/*maxData.getMaxMoves()*/);    // DA DECOMMENTARE E CASTARE
-        hOvrMoves.setSpacing(vGame.getSpacing());
-        lblMoves.getStyleClass().add("labelStat");
-        valMoves.getStyleClass().add("labelStat");
-        hOvrMoves.getChildren().addAll(lblMoves, valMoves);
+        Label lblMaxScore = new Label("Punteggio max: ");
+        Label valMaxScore = new Label(Integer.toString(maxScore));
+        hOvrMaxScore.setSpacing(vGame.getSpacing());
+        lblMaxScore.getStyleClass().add("labelStat");
+        valMaxScore.getStyleClass().add("labelStat");        
+        hOvrMaxScore.getChildren().addAll(lblMaxScore, valMaxScore);
         
-        Label lblDiv = new Label("Rapporto p/m: ");
-        Label valDiv = new Label(/*maxData.getMaxScore() / maxData.getMaxMoves()*/);    // DA DECOMMENTARE E CASTARE
-        hOvrDiv.setSpacing(vGame.getSpacing());
-        lblDiv.getStyleClass().add("labelStat");
-        valDiv.getStyleClass().add("labelStat");
-        hOvrDiv.getChildren().addAll(lblDiv, valDiv);
+        Label lblAvg = new Label("Media punti: ");
+        Label valAvg = new Label(Integer.toString(avg));
+        hOvrAvg.setSpacing(vGame.getSpacing());
+        lblAvg.getStyleClass().add("labelStat");
+        valAvg.getStyleClass().add("labelStat");
+        hOvrAvg.getChildren().addAll(lblAvg, valAvg);
+        
+        Label lblMaxTile = new Label("Tile max: ");
+        Label valMaxTile = new Label(Integer.toString(maxTile));
+        hOvrMaxTile.setSpacing(vGame.getSpacing());
+        lblMaxTile.getStyleClass().add("labelStat");
+        valMaxTile.getStyleClass().add("labelStat");
+        hOvrMaxTile.getChildren().addAll(lblMaxTile, valMaxTile);
         
         Label scrollTitle = new Label("Statistiche complete: ");
         scrollTitle.getStyleClass().add("labelStat");
-        
-        //table.setItem(data);
-        
+                
         TableColumn matchCol = new TableColumn("Partita n.");
         TableColumn param1Col = new TableColumn("V/S");
-        TableColumn<MatchStat, String> param2Col = new TableColumn<>("Punteggio");
-        TableColumn<MatchStat, String> param3Col = new TableColumn<>("Mosse");
-        TableColumn<MatchStat, String> param4Col = new TableColumn<>("Valore raggiunto");
+        TableColumn scoreCol = new TableColumn<>("Punteggio");
+        TableColumn movesCol = new TableColumn<>("Mosse");
+        TableColumn valueCol = new TableColumn<>("Valore raggiunto");
         
         matchCol.setMinWidth(GRID_WIDTH / 5);
         param1Col.setMinWidth(GRID_WIDTH / 5);
-        param2Col.setMinWidth(GRID_WIDTH / 5);
-        param3Col.setMinWidth(GRID_WIDTH / 5);
-        param4Col.setMinWidth(GRID_WIDTH / 5);
+        scoreCol.setMinWidth(GRID_WIDTH / 3);
+        movesCol.setMinWidth(GRID_WIDTH / 3);
+        valueCol.setMinWidth(GRID_WIDTH / 3);
         
         
-        //param2Col.setCellValueFactory(new PropertyValueFactory<MatchStat, String>("maxScore"));
-        //param3Col.setCellValueFactory(new PropertyValueFactory<MatchStat, String>("maxMoves"));
-        //param4Col.setCellValueFactory(new PropertyValueFactory<MatchStat, String>("maxValue"));
+        scoreCol.setCellValueFactory(new PropertyValueFactory<Tripla, String>("maxScore"));
+        movesCol.setCellValueFactory(new PropertyValueFactory<Tripla, String>("maxMoves"));
+        valueCol.setCellValueFactory(new PropertyValueFactory<Tripla, String>("maxValue"));
         
-        table.getColumns().addAll(matchCol, param1Col, param2Col, param3Col, param4Col);
+        table.getColumns().addAll(scoreCol, movesCol, valueCol);        
         table.getStyleClass().add("table");
+
+        table.setItems(data);
+
         
         sp.setContent(table);
         sp.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -929,27 +950,37 @@ public class GameManager extends Group {
         
         vPrinc.setSpacing(15);
         vPrinc.setPadding(new Insets(10));
-        vPrinc.getChildren().addAll(hOvrScore, hOvrMoves, hOvrDiv);
+        vPrinc.getChildren().addAll(hOvrMaxScore, hOvrAvg, hOvrMaxTile);
+        
+        Button bBack = new Button("Back");
+        bBack.getStyleClass().add("try");
+        bBack.setOnTouchPressed(e -> {
+            clearBox();
+        });
+        bBack.setOnAction(e -> {
+            clearBox();
+        });
+
         
         vSecond.setSpacing(7);
         vSecond.setPadding(new Insets(10));
-        vSecond.getChildren().add(vOvrScrl);
+        vSecond.getChildren().addAll(vOvrScrl, bBack);
         
         vGame.setSpacing(20);
-        vGame.getChildren().addAll(vTitle, vPrinc, vSecond);
+        vGame.getChildren().setAll(vTitle, vPrinc, vSecond);
     }
     
-    private double getRatio(int score, int moves) {
-        return score/moves;
-    }
-    
+    /**
+     * Classe che implementa l'interfaccia Griglia per poter interagire col
+     * GiocatoreAutomatico.
+     */
     private class MyGriglia extends HashMap<Location, Integer> implements Griglia {}
     
     /** Classe interna necessaria per gestire in un unico oggetto i tre dati.  
      * @author Claudia
      * 
      */
-    private class  Tripla{
+    public class  Tripla{
         private int maxScore;
         private int maxValue;
         private int maxMoves;
@@ -962,30 +993,25 @@ public class GameManager extends Group {
         
         /** Metodo getter della variabile maxScore
          * @Author Claudia
-         * @return Valore intero del punteggio massimo
+         * @return Stringa rappresentante il punteggio massimo.
          */
-        public int getMaxScore(){ return this.maxScore; }
+        public String getMaxScore(){ return Integer.toString(this.maxScore); }
         /** Metodo getter della variabile maxMoves
          * @author Claudia
-         * @return valore intero del numero mosse
+         * @return Stringa rappresentante il numero di mosse.
          */
-        public int getMaxMoves(){ return this.maxMoves; }
+        public String getMaxMoves(){ return Integer.toString(this.maxMoves); }
         /** Metodo getter della variabile maxValue.
          * @author Claudia
-         * @return Valore intero del valore massimo raggiunto. 
+         * @return Stringa rappresentante il valore massimo raggiunto.
          */
-        public int getMaxValue(){ return this.maxValue; }
+        public String getMaxValue(){ return Integer.toString(this.maxValue); }
+
+        public int getMaxScoreAsInt(){ return this.maxScore; }
+        public int getMaxMovesAsInt(){ return this.maxMoves; }
+        public int getMaxValueAsInt(){ return this.maxValue; }
     }
     
-
-    
-    private interface MatchStat {
-        
-        public int getMaxScore();
-        public int getMaxValue();
-        public int getMaxMoves();        
-    }
-
 }
 
 
